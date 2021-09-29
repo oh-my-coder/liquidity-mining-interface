@@ -2,6 +2,7 @@ import './App.css';
 import Header from './Components/Header'
 import Minings from './Components/MiningsList'
 import { positions, Provider as AlertProvider } from 'react-alert'
+import { BrowserView, MobileView } from "react-device-detect"
 
 const options = {
   timeout: 5000,
@@ -33,8 +34,13 @@ function App() {
   return (
     <AlertProvider template={AlertTemplate} {...options}>
       <div className="App">
-        <Header />
-        <Minings />
+        <MobileView >
+          <div className='mobile-text'>Liquidity mining interface does not support mobile devices yet. <br/><br/> Please use desktop version.</div>
+        </MobileView>
+        <BrowserView>
+          <Header />
+          <Minings />
+        </BrowserView>
       </div>
     </AlertProvider>
   );
