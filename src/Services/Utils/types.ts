@@ -1,6 +1,7 @@
 export enum EMiningType {
   DROPIUM = 'DROPIUM',
-  STAKING_CLAIMABLE = 'STAKING_CLAIMABLE'
+  STAKING_CLAIMABLE = 'STAKING_CLAIMABLE',
+  STAKING_CLAIMABLE_V2 = 'STAKING_CLAIMABLE_V2'
 }
 
 export enum EMiningStatus {
@@ -24,7 +25,7 @@ export type TStakingClaimableMiningParams = {
 
 export type TMining = {
   title?: string
-  type?: EMiningType
+  type: EMiningType
   totalRewards?: number
   status?: EMiningStatus
   networkId?: 1 | 56 |137

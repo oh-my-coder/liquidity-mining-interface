@@ -18,7 +18,7 @@ type TProps = {
   mining: TMining
 }
 
-const defaultInfo = {userStake: 0, userRewards: 0}
+const defaultInfo = {userStake: 0, userRewards: '0'}
 
 const StakingMiningItem: FC<TProps> = (props: TProps) => {
   const alert = useAlert()
@@ -31,11 +31,13 @@ const StakingMiningItem: FC<TProps> = (props: TProps) => {
 
   const { mining } = props
   const { address } = mining.params as TStakingClaimableMiningParams
+  const { type } = mining
 
   useEffect(() => {
     if (mining.params && userAddress) {
-      getStakingMiningInfo(address, userAddress).then(res => setInfo(res))
+      getStakingMiningInfo(address, userAddress, type).then(res => setInfo(res))
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userAddress, mining])
 
 
@@ -45,23 +47,23 @@ const StakingMiningItem: FC<TProps> = (props: TProps) => {
       return
     }
 
-    const insufficientBalance = await checkTokenBalance(address, userAddress, stakeValue)
+    const insufficientBalance = await checkTokenBalance(address, userAddress, stakeValue, type)
     if (insufficientBalance) {
       alert.error('Insufficient balance')
       return
     }
 
-    const tokenAllowed = await checkAllowance(stakeValue, address, userAddress)
-    // const tokenAllowed =true
+    const tokenAllowed = await checkAllowance(stakeValue, address, userAddress, type)
     if (!tokenAllowed) {
       makeApprove(
         address, 
         userAddress, 
-        () => stakeIntoPool(stakeValue, address, userAddress, () => alert.success('Token was successfully approved'), (e) => alert.error(e.message)),
+        type,
+        () => stakeIntoPool(stakeValue, address, userAddress, type, () => alert.success('Token was successfully approved'), (e) => alert.error(e.message)),
         (e) => alert.error(e.message)
         )
     } else {
-      stakeIntoPool(stakeValue, address, userAddress, () => alert.success('Successfully staked'), (e) => alert.error(e.message))
+      stakeIntoPool(stakeValue, address, userAddress, type, () => alert.success('Successfully staked'), (e) => alert.error(e.message))
     }
   }
 
@@ -71,29 +73,29 @@ const StakingMiningItem: FC<TProps> = (props: TProps) => {
       return
     }
 
-    const insufficientStake = await checkStakedBalance(address, userAddress, stakeValue)
+    const insufficientStake = await checkStakedBalance(address, userAddress, stakeValue, type)
     if (insufficientStake) {
       alert.error('insufficient staked balance')
       return
     }
-    unstakeFromPool(stakeValue, address, userAddress, () => alert.success('Successfully unstaked'), (e) => alert.error(e.message))
+    unstakeFromPool(stakeValue, address, userAddress, type, () => alert.success('Successfully unstaked'), (e) => alert.error(e.message))
   }
 
   const renderInfo = () => {
     return (
       <div className='staking-mining-item-info'>
         <div>Your stake: {info.userStake.toFixed(2)} LP tokens</div>
-        <div>Your rewards: {info.userRewards.toFixed(2)} Opium</div>
+        <div>Your rewards: {info.userRewards}</div>
       </div>
     )
   }
 
   const claim = async () => {
-    await claimStakingClaimableReward(address, userAddress, () => alert.success('Successfully claimed'), (e) => alert.error(e.message))
+    await claimStakingClaimableReward(address, userAddress, type, () => alert.success('Successfully claimed'), (e) => alert.error(e.message))
   }
 
   const exit = async () => {
-    await exitStakingClaimableReward(address, userAddress, () => alert.success('Successfully exited'), (e) => alert.error(e.message))
+    await exitStakingClaimableReward(address, userAddress, type, () => alert.success('Successfully exited'), (e) => alert.error(e.message))
   }
 
   return (

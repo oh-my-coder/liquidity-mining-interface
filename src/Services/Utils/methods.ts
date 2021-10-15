@@ -5,7 +5,7 @@ import {
 import Web3 from 'web3'
 import { convertFromBN, convertToBN } from './bn'
 import { sendTx } from './transaction'
-import { TMining, TDropiumCalculatingMiningParams, TDropiumClaimableMiningParams } from './types'
+import { TMining, TDropiumCalculatingMiningParams, TDropiumClaimableMiningParams, EMiningType } from './types'
 import { fetchTheGraph } from './theGraph'
 import BalanceTree from './balanceTree'
 import { BigNumber } from 'ethers'
@@ -131,30 +131,56 @@ export const claimDropiumReward = async (
 
 export const getStakingMiningInfo = async (
   address: string,
-  userAddress: string
+  userAddress: string,
+  type: EMiningType
 ) => {
   const decimals = 18
-  const contract = createStakingClaimableContractInstance(address)
+  const contract = createStakingClaimableContractInstance(address, type)
   const userStake = await contract?.methods.balanceOf(userAddress).call()
-  const userRewards = await contract?.methods.rewards(userAddress).call()
+  let userRewards = '0'
+  if ( type === EMiningType.STAKING_CLAIMABLE) {
+    const rewardsBN = await contract?.methods.earned(userAddress).call()
+    const tokenAddress = await contract?.methods.gift().call()
+    const tokenContract = createTokenContractInstance(tokenAddress)
+    const tokenSymbol =  await tokenContract?.methods.symbol().call()
+    const tokenDecimals =  await tokenContract?.methods.decimals().call()
+    const rewards = (+convertFromBN(rewardsBN, tokenDecimals)).toFixed(2)
+    userRewards = `${rewards} ${tokenSymbol}`
+  } else {
+    const token0RewardsBN = await contract?.methods.earned(0, userAddress).call()
+    const token1RewardsBN = await contract?.methods.earned(1, userAddress).call()
+    const token0Rewards = await contract?.methods.tokenRewards(0).call()
+    const token1Rewards = await contract?.methods.tokenRewards(1).call()
+    const token0Contract = createTokenContractInstance(token0Rewards.gift)
+    const token1Contract = createTokenContractInstance(token1Rewards.gift)
+    const token0Symbol = await token0Contract?.methods.symbol().call()
+    const token1Symbol = await token1Contract?.methods.symbol().call()
+    const token0Decimals =  await token0Contract?.methods.decimals().call()
+    const token1Decimals =  await token1Contract?.methods.decimals().call()
+    const rewards0 = (+convertFromBN(token0RewardsBN, token0Decimals)).toFixed(2)
+    const rewards1 = (+convertFromBN(token1RewardsBN, token1Decimals)).toFixed(2)
+
+    userRewards = `${rewards0} ${token0Symbol} + ${rewards1} ${token1Symbol}`
+  }
 
   return {
     userStake: +convertFromBN(userStake, decimals),
-    userRewards: +convertFromBN(userRewards, decimals),
+    userRewards,
   }
 }
 
 export const makeApprove = async (
   address: string, 
   userAddress: string, 
+  type: EMiningType,
   onConfirm: () => void, 
   onError: (error: Error) => void,
-  marginAddress?: string
+  marginAddress?: string,
 ): Promise<string> => {
 
   // Create contracts instances 
-  const stakingClaimableContract = createStakingClaimableContractInstance(address)
-  const tokenAddress =  marginAddress || await stakingClaimableContract?.methods.underlying().call()
+  const stakingClaimableContract = createStakingClaimableContractInstance(address, type)
+  const tokenAddress =  marginAddress || (type === EMiningType.STAKING_CLAIMABLE ? await stakingClaimableContract?.methods.underlying().call() : await stakingClaimableContract?.methods.mooniswap().call())
   const tokenContract = createTokenContractInstance(tokenAddress)
 
   // Make allowance 
@@ -167,11 +193,12 @@ export const stakeIntoPool = async (
   value: number,
   address: string, 
   userAddress: string, 
+  type: EMiningType,
   onConfirm: () => void, 
   onError: (error: Error) => void
 ) => {
   // Create contracts instances 
-  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+  const stakingClaimableContract = createStakingClaimableContractInstance(address, type)
 
   // Create deposit tx
   const decimals = await stakingClaimableContract?.methods.decimals().call()
@@ -185,11 +212,12 @@ export const unstakeFromPool = async (
   value: number,
   address: string, 
   userAddress: string, 
-  onConfirm: () => void, 
+  type: EMiningType,
+  onConfirm: () => void,
   onError: (error: Error) => void
 ) => {
   // Create contracts instances 
-  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+  const stakingClaimableContract = createStakingClaimableContractInstance(address, type)
 
   // Create withdrawal tx
   const decimals = await stakingClaimableContract?.methods.decimals().call()
@@ -202,12 +230,13 @@ export const unstakeFromPool = async (
 export const checkTokenBalance = async (
   address: string,
   userAddress: string,
-  value: number
-) => {
+  value: number,
+  type: EMiningType
+  ) => {
   try {
-    const stakingClaimableContract = createStakingClaimableContractInstance(address)
+    const stakingClaimableContract = createStakingClaimableContractInstance(address, type)
     const decimals = await stakingClaimableContract?.methods.decimals().call()
-    const tokenAddress =  await stakingClaimableContract?.methods.underlying().call()
+    const tokenAddress =  type === EMiningType.STAKING_CLAIMABLE ? await stakingClaimableContract?.methods.underlying().call() : await stakingClaimableContract?.methods.mooniswap().call()
     const tokenContract = createTokenContractInstance(tokenAddress)
     const balanceBN = await tokenContract?.methods.balanceOf(userAddress).call()
     const balance = +convertFromBN(balanceBN, decimals)
@@ -229,11 +258,11 @@ export const checkAllowance = async (
   value: number,
   address: string, 
   userAddress: string,
+  type: EMiningType
 ) => {
-
   // Create contracts instances 
-  const stakingClaimableContract = createStakingClaimableContractInstance(address)
-  const tokenAddress = await stakingClaimableContract?.methods.underlying().call({from: userAddress})
+  const stakingClaimableContract = createStakingClaimableContractInstance(address, type)
+  const tokenAddress = type === EMiningType.STAKING_CLAIMABLE ? await stakingClaimableContract?.methods.underlying().call() : await stakingClaimableContract?.methods.mooniswap().call()
   // Check allowance
   const allowance = await getAllowance(tokenAddress, userAddress, address).then((allowance: string) => {
     return stakingClaimableContract?.methods.decimals().call().then((decimals: string) => {
@@ -246,10 +275,11 @@ export const checkAllowance = async (
 export const checkStakedBalance = async (
   address: string,
   userAddress: string,
-  value: number
-) => {
+  value: number,
+  type: EMiningType
+  ) => {
   try {
-    const stakingClaimableContract = createStakingClaimableContractInstance(address)
+    const stakingClaimableContract = createStakingClaimableContractInstance(address, type)
     const balanceBN = await stakingClaimableContract?.methods.balanceOf(userAddress).call()
     const decimals = await stakingClaimableContract?.methods.decimals().call()
     const balance = +convertFromBN(balanceBN, +decimals)
@@ -263,21 +293,24 @@ export const checkStakedBalance = async (
 export const claimStakingClaimableReward = async (
   address: string,
   userAddress: string, 
+  type: EMiningType,
   onConfirm: () => void, 
   onError: (error: Error) => void
-) => {
-  const stakingClaimableContract = createStakingClaimableContractInstance(address)
-  const tx = stakingClaimableContract?.methods.getReward().send({ from: userAddress })
+  ) => {
+  const stakingClaimableContract = createStakingClaimableContractInstance(address, type)
+  const tx = type === EMiningType.STAKING_CLAIMABLE ? stakingClaimableContract?.methods.getReward().send({ from: userAddress }) :  stakingClaimableContract?.methods.getAllRewards().send({ from: userAddress }) 
   return await sendTx(tx, onConfirm, onError)
+
 }
 
 export const exitStakingClaimableReward = async (
   address: string,
   userAddress: string, 
+  type: EMiningType,
   onConfirm: () => void, 
   onError: (error: Error) => void
 ) => {
-  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+  const stakingClaimableContract = createStakingClaimableContractInstance(address, type)
   const tx = stakingClaimableContract?.methods.exit().send({ from: userAddress })
   return await sendTx(tx, onConfirm, onError)
 }
