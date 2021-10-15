@@ -1,19 +1,24 @@
-import { createDrOpiumContractInstance } from './contract'
+import { 
+  createDrOpiumContractInstance, createStakingClaimableContractInstance,
+  createTokenContractInstance
+} from './contract'
 import Web3 from 'web3'
 import { convertFromBN, convertToBN } from './bn'
 import { sendTx } from './transaction'
-import { TMining, TCalculatingMiningParams, TClaimableMiningParams } from './types'
+import { TMining, TDropiumCalculatingMiningParams, TDropiumClaimableMiningParams } from './types'
 import { fetchTheGraph } from './theGraph'
 import BalanceTree from './balanceTree'
 import { BigNumber } from 'ethers'
 
+const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 
-export const getUserStake = async (
+// DROPIUM methods
+export const getDropiumUserStake = async (
   mining: TMining,
   userAddress: string
 ) => {
   const decimals = 18
-  const params = mining.params as TCalculatingMiningParams
+  const params = mining.params as TDropiumCalculatingMiningParams
   if (!params || !params.subgraphUrl || !params.subgraphParam) {
     return
   }
@@ -40,7 +45,7 @@ export const getUserStake = async (
 
 
 export const getDropiumInfo = async (mining: TMining, userAddress: string) => {
-  const params = mining.params as TClaimableMiningParams
+  const params = mining.params as TDropiumClaimableMiningParams
 
   if (!params || !params.list || !params.address) {
     return
@@ -49,7 +54,6 @@ export const getDropiumInfo = async (mining: TMining, userAddress: string) => {
   // Get users account data
   const user = params.list.find(el => el.account === userAddress)
   const drOpiumContract = createDrOpiumContractInstance(params.address)
-
   const bonusEnd = await drOpiumContract?.methods.bonusEnd().call()
   
   if (!user) return {charityFee: 0, bonusEnd: 0, fullReward: 0, claimableReward: 0}
@@ -80,14 +84,14 @@ export const getDropiumInfo = async (mining: TMining, userAddress: string) => {
   }
 }
 
-export const claimReward = async (
+export const claimDropiumReward = async (
   mining: TMining,
   userAddress: string,
   onConfirm: () => void,
   onError: (error: Error) => void
 ) => {
   
-  const params = mining.params as TClaimableMiningParams
+  const params = mining.params as TDropiumClaimableMiningParams
 
   if (!params || !params.list || !params.address) {
     return
@@ -123,3 +127,157 @@ export const claimReward = async (
 
 }
 
+// Staking Claimable methods
+
+export const getStakingMiningInfo = async (
+  address: string,
+  userAddress: string
+) => {
+  const decimals = 18
+  const contract = createStakingClaimableContractInstance(address)
+  const userStake = await contract?.methods.balanceOf(userAddress).call()
+  const userRewards = await contract?.methods.rewards(userAddress).call()
+
+  return {
+    userStake: +convertFromBN(userStake, decimals),
+    userRewards: +convertFromBN(userRewards, decimals),
+  }
+}
+
+export const makeApprove = async (
+  address: string, 
+  userAddress: string, 
+  onConfirm: () => void, 
+  onError: (error: Error) => void,
+  marginAddress?: string
+): Promise<string> => {
+
+  // Create contracts instances 
+  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+  const tokenAddress =  marginAddress || await stakingClaimableContract?.methods.underlying().call()
+  const tokenContract = createTokenContractInstance(tokenAddress)
+
+  // Make allowance 
+  const tx = tokenContract?.methods.approve(address, MAX_UINT256).send({ from: userAddress })
+  return await sendTx(tx, onConfirm, onError)
+}
+
+
+export const stakeIntoPool = async (
+  value: number,
+  address: string, 
+  userAddress: string, 
+  onConfirm: () => void, 
+  onError: (error: Error) => void
+) => {
+  // Create contracts instances 
+  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+
+  // Create deposit tx
+  const decimals = await stakingClaimableContract?.methods.decimals().call()
+  const tx = stakingClaimableContract?.methods.stake(convertToBN(value, +decimals)).send({ from: userAddress })
+
+  // Send tx
+  return await sendTx(tx, onConfirm, onError)
+}
+
+export const unstakeFromPool = async (
+  value: number,
+  address: string, 
+  userAddress: string, 
+  onConfirm: () => void, 
+  onError: (error: Error) => void
+) => {
+  // Create contracts instances 
+  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+
+  // Create withdrawal tx
+  const decimals = await stakingClaimableContract?.methods.decimals().call()
+  const tx = stakingClaimableContract?.methods.withdraw(convertToBN(value, +decimals)).send({ from: userAddress })
+
+  // Send tx
+  return await sendTx(tx, onConfirm, onError)
+}
+
+export const checkTokenBalance = async (
+  address: string,
+  userAddress: string,
+  value: number
+) => {
+  try {
+    const stakingClaimableContract = createStakingClaimableContractInstance(address)
+    const decimals = await stakingClaimableContract?.methods.decimals().call()
+    const tokenAddress =  await stakingClaimableContract?.methods.underlying().call()
+    const tokenContract = createTokenContractInstance(tokenAddress)
+    const balanceBN = await tokenContract?.methods.balanceOf(userAddress).call()
+    const balance = +convertFromBN(balanceBN, decimals)
+    return value > balance
+  } catch (e) {
+    console.log(e)
+    return true
+  }
+}
+
+export const getAllowance = async (tokenAddress: string, userAddress: string, address: string) => {
+  const tokenContract = createTokenContractInstance(tokenAddress)
+
+  const allowance = await tokenContract?.methods.allowance(userAddress, address).call()
+  return allowance
+}
+
+export const checkAllowance = async (
+  value: number,
+  address: string, 
+  userAddress: string,
+) => {
+
+  // Create contracts instances 
+  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+  const tokenAddress = await stakingClaimableContract?.methods.underlying().call({from: userAddress})
+  // Check allowance
+  const allowance = await getAllowance(tokenAddress, userAddress, address).then((allowance: string) => {
+    return stakingClaimableContract?.methods.decimals().call().then((decimals: string) => {
+      return +convertFromBN(allowance, +decimals)
+    })
+  })
+  return allowance > value 
+}
+
+export const checkStakedBalance = async (
+  address: string,
+  userAddress: string,
+  value: number
+) => {
+  try {
+    const stakingClaimableContract = createStakingClaimableContractInstance(address)
+    const balanceBN = await stakingClaimableContract?.methods.balanceOf(userAddress).call()
+    const decimals = await stakingClaimableContract?.methods.decimals().call()
+    const balance = +convertFromBN(balanceBN, +decimals)
+    return value > balance
+  } catch (e) {
+    console.log(e)
+    return true
+  }
+}
+
+export const claimStakingClaimableReward = async (
+  address: string,
+  userAddress: string, 
+  onConfirm: () => void, 
+  onError: (error: Error) => void
+) => {
+  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+  const tx = stakingClaimableContract?.methods.getReward().send({ from: userAddress })
+  return await sendTx(tx, onConfirm, onError)
+}
+
+export const exitStakingClaimableReward = async (
+  address: string,
+  userAddress: string, 
+  onConfirm: () => void, 
+  onError: (error: Error) => void
+) => {
+  const stakingClaimableContract = createStakingClaimableContractInstance(address)
+  const tx = stakingClaimableContract?.methods.exit().send({ from: userAddress })
+  return await sendTx(tx, onConfirm, onError)
+}

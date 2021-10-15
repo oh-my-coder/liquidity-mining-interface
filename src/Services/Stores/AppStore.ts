@@ -1,11 +1,23 @@
 import { TMining } from './../Utils/types'
-import { computed, action, observable } from "mobx"
+import { computed, action, observable, reaction } from "mobx"
 import authStore from "./AuthStore"
 import { minings } from '../DataBase/minings'
 
 export class AppStore {
 
  @observable minings: TMining[] | [] = minings
+ @observable requestsAreNotAllowed: boolean = ((authStore.blockchainStore.requiredNetworkName !== authStore.blockchainStore.currentNetworkName) || !authStore.blockchainStore.address)
+
+ constructor() {
+  reaction(() => authStore.blockchainStore.address, this.setRequestsAreNotAllowedReaction)
+  reaction(() => authStore.blockchainStore.requiredNetworkName, this.setRequestsAreNotAllowedReaction)
+  reaction(() => authStore.blockchainStore.currentNetworkName, this.setRequestsAreNotAllowedReaction)
+}
+
+@action
+setRequestsAreNotAllowedReaction = () => {
+  this.requestsAreNotAllowed = ((authStore.blockchainStore.requiredNetworkName !== authStore.blockchainStore.currentNetworkName) || !authStore.blockchainStore.address)
+}
 
   @computed
   private get _miningsByNetwork(): {[key: number]: TMining[]} {

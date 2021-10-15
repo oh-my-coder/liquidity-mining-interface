@@ -4,7 +4,7 @@ import { observer } from 'mobx-react'
 import { useAlert } from 'react-alert'
 import { Button, ETheme } from '@opiumteam/react-opium-components'
 import authStore from '../../Services/Stores/AuthStore'
-import { getDropiumInfo , getUserStake, claimReward } from '../../Services/Utils/methods'
+import { getDropiumInfo , getDropiumUserStake, claimDropiumReward } from '../../Services/Utils/methods'
 import { EMiningStatus, TMining } from '../../Services/Utils/types'
 
 import './styles.scss'
@@ -16,7 +16,7 @@ type TProps = {
 const defaultCalculatingData = {deposits: 0, rewards: 0}
 const defaultClaimableData = {charityFee: 0, bonusEnd: 0, fullReward: 0, claimableReward: 0}
 
-const MiningItem: FC<TProps> = (props: TProps) => {
+const DropiumMiningItem: FC<TProps> = (props: TProps) => {
   const alert = useAlert()
 
   const [ calculatingData, setCalculatingData ] = useState(defaultCalculatingData)
@@ -28,7 +28,7 @@ const MiningItem: FC<TProps> = (props: TProps) => {
 
   useEffect(() => {
     if (mining.status === EMiningStatus.CALCULATING) {
-      getUserStake(mining, userAddress).then(res => {
+      getDropiumUserStake(mining, userAddress).then(res => {
         if (res) {
           setCalculatingData(res)
         }
@@ -72,17 +72,17 @@ const MiningItem: FC<TProps> = (props: TProps) => {
   }
 
   const claim = async () => {
-    await claimReward(mining, userAddress, () => alert.success('Successfully claimed'), (e) => alert.error(e.message))
+    await claimDropiumReward(mining, userAddress, () => alert.success('Successfully claimed'), (e) => alert.error(e.message))
   }
 
   return (
-    <div className='mining-item-wrapper' key={mining.title}>
-        <div className='mining-item-title'>{mining.title}</div>
-        <div className='mining-item-reward'>{renderRewards(mining)}</div>
-        <div className='mining-item-fee'>{renderFee(mining)}</div>
-        <div className='mining-item-button-wrapper'><Button variant='secondary' theme={ETheme.LIGHT} disabled={claimableData.claimableReward === 0} label='claim' onClick={claim}/></div>
+    <div className='dropium-mining-item-wrapper' key={mining.title}>
+        <div className='dropium-mining-item-title'>{mining.title}</div>
+        <div className='dropium-mining-item-reward'>{renderRewards(mining)}</div>
+        <div className='dropium-mining-item-fee'>{renderFee(mining)}</div>
+        <div className='dropium-mining-item-button-wrapper'><Button variant='secondary' theme={ETheme.LIGHT} disabled={claimableData.claimableReward === 0} label='claim' onClick={claim}/></div>
     </div>
   )
 }
 
-export default observer(MiningItem)
+export default observer(DropiumMiningItem)

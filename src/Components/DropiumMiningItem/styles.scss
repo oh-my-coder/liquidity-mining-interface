@@ -1,4 +1,4 @@
-.mining-item-wrapper {
+.dropium-mining-item-wrapper {
   color: #0A0A1E;;
   margin: .2rem auto;
   padding: 0 2rem;
@@ -15,22 +15,25 @@
   height: 8.5rem;
   border-radius: 10px;
 
-  .mining-item-title {
+  .dropium-mining-item-title {
     width: 30%;
   }
 
-  .mining-item-reward {
+  .dropium-mining-item-reward {
     width: 20%;
   }
 
-  .mining-item-fee {
+  .dropium-mining-item-fee {
     width: 20%;
   }
 
 
-  .mining-item-button-wrapper {
-    width: 10%;
+  .dropium-mining-item-button-wrapper {
+    width: 12%;
     display: flex;
     justify-content: center;
+    & > * {
+      width: 50%;
+    } 
   }
 }

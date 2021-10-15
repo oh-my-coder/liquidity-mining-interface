@@ -1,5 +1,6 @@
 export enum EMiningType {
-  DROPIUM = 'DROPIUM'
+  DROPIUM = 'DROPIUM',
+  STAKING_CLAIMABLE = 'STAKING_CLAIMABLE'
 }
 
 export enum EMiningStatus {
@@ -7,14 +8,18 @@ export enum EMiningStatus {
   CLAIMABLE = 'CLAIMABLE'
 }
 
-export type TCalculatingMiningParams = {
+export type TDropiumCalculatingMiningParams = {
   subgraphUrl?: string,
   subgraphParam?: string
 }
 
-export type TClaimableMiningParams = {
+export type TDropiumClaimableMiningParams = {
   address?: string,
   list?: {account: string, amount: number}[]
+}
+
+export type TStakingClaimableMiningParams = {
+  address: string,
 }
 
 export type TMining = {
@@ -23,5 +28,5 @@ export type TMining = {
   totalRewards?: number
   status?: EMiningStatus
   networkId?: 1 | 56 |137
-  params?: TCalculatingMiningParams | TClaimableMiningParams
+  params?: TDropiumCalculatingMiningParams | TDropiumClaimableMiningParams | TStakingClaimableMiningParams
 }

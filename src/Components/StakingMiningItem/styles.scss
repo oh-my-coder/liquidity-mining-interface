@@ -1,0 +1,114 @@
+.staking-mining-item-wrapper {
+  color: #0A0A1E;;
+  margin: .2rem auto;
+  padding: 0 2rem;
+  width: 90%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border: #0A0A1E 1px solid;
+  & > div {
+    font-size: 14px;
+  }
+  
+  height: 8.5rem;
+  border-radius: 10px;
+
+  .staking-mining-item-title {
+    width: 30%;
+  }
+
+  .staking-mining-item-reward {
+    width: 20%;
+  }
+
+  .staking-mining-item-info {
+    width: 20%;
+  }
+
+
+  .staking-mining-item-button-wrapper {
+    width: 12%;
+    display: flex;
+    justify-content: space-evenly;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    & > * {
+      width: 50%;
+    } 
+  }
+
+
+  .pools-list-item-second-column {
+    width: 20%;
+    font-size: 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+
+    .pools-list-item-balance {
+      display: flex;
+      flex-direction: row;
+      & > * {
+        margin-right: 5px;
+      }
+    }
+
+    .pools-list-item-second-column-buttons-wrapper {
+      width: 100%;
+      display: flex;
+      button {
+        margin-right: 1rem;
+      }
+    }
+
+    .pools-list-item-input {
+      width: 50%;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      input {
+        height: 16px;
+        background: transparent;
+        border-radius: 0;
+        font-family: "Montserrat", sans-serif !important;
+        font-style: normal;
+        font-weight: 500;
+        font-size: 12px;
+        line-height: 16px;
+        padding: 0;
+        outline: none;
+        box-shadow: none;
+        border: none;
+        transition: border-color .25s ease;
+  
+  
+        &:focus {
+            background-color: transparent;
+        }
+  
+        &:disabled {
+            background-color: transparent !important;
+            border: 0;
+        }
+        color: #0A0A1E;
+        border-bottom: 1px solid rgba(#0A0A1E, .3) !important;
+  
+  
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+  
+        /* Firefox */
+        &[type=number] {
+          -moz-appearance: textfield;
+        }
+      }
+    }
+  } 
+}
