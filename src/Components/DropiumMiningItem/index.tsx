@@ -66,7 +66,7 @@ const DropiumMiningItem: FC<TProps> = (props: TProps) => {
     return (
       <div>
         <div>Charity fee: {(claimableData.charityFee * 100).toFixed()}%</div>
-        <div>Charity fee ends: {moment.unix(claimableData.bonusEnd).format('DD-MMM-YY').toUpperCase()}</div>
+        <div>Charity fee ends: { claimableData.bonusEnd > 0 ? moment.unix(claimableData.bonusEnd).format('DD-MMM-YY').toUpperCase() : 'Unknown'}</div>
       </div>
     )
   }

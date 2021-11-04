@@ -9,6 +9,7 @@ import axios from 'axios'
 
 import './styles.scss'
 import { TMining } from '../../Services/Utils/types'
+import { getScanLink, shortenAddress } from '../../Services/Utils/helpers'
 
 
 const dropdownItems = [
@@ -87,15 +88,14 @@ const Header: FC<{}> = () => {
         }
       />
       <div className='header-title'>Liquidity Mining Interface</div>
-      <DropdownSelector
-        title={dropDownTitle}
-        items={dropdownItems}
-        onSelect={(eventKey) => handleSelect(eventKey)}
+      <div>
+        <DropdownSelector
+          title={dropDownTitle}
+          items={dropdownItems}
+          onSelect={(eventKey) => handleSelect(eventKey)}
         theme={ETheme.LIGHT}
-      />
-      <div className={`header-network-wrapper ${requiredNetworkName !== currentNetworkName && 'red-network'}`}>
-        <div>Required network: {requiredNetworkName}</div>
-        <div>You current network: {currentNetworkName}</div>
+        />
+        {requiredNetworkName !== currentNetworkName && <div className='red-network'>change network in wallet</div>}
       </div>
       <Button 
         variant='secondary' 
@@ -105,7 +105,7 @@ const Header: FC<{}> = () => {
       />
       <div className='header-buttons-wrapper'>
         {(authStore.loggedIn && authStore.blockchainStore.address) && 
-        <OpiumLink theme={ETheme.LIGHT} newTab={true} label={address} href={`https://etherscan.io/address/${address}`} />
+          <OpiumLink theme={ETheme.LIGHT} newTab={true} label={(shortenAddress(address))} href={getScanLink(address, authStore.networkId)} />
       }
       <Button 
         variant='secondary' 
