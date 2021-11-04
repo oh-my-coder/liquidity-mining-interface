@@ -4,7 +4,7 @@ liquidity-mining is an open-source community maintained decentralized liquidity 
 <br>
 
 # Where to find
-Last version is deployed on [ipfs](https://cloudflare-ipfs.com/ipfs/QmPehNqKAe7FeaJVeLoFh6Yb6JLrSKWBPiNjSEefWCXsTW/).
+Last version is deployed on [ipfs](https://cloudflare-ipfs.com/ipfs/QmZnpRsecaMVqYA3GHzUeYUACZ2Wfsm77EyARNLgeSNFNn/).
 
 <br>
 
