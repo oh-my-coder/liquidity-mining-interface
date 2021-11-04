@@ -18,7 +18,7 @@ type TProps = {
   mining: TMining
 }
 
-const defaultInfo = {userStake: 0, userRewards: '0'}
+const defaultInfo = {userStake: 0, userRewards: '0', claimable: false}
 
 const StakingMiningItem: FC<TProps> = (props: TProps) => {
   const alert = useAlert()
@@ -106,13 +106,13 @@ const StakingMiningItem: FC<TProps> = (props: TProps) => {
       <div className='pools-list-item-second-column'>
         <div className='pools-list-item-input'>Amount to stake: <input type='number' onChange={e => setStakeValue(+e.target.value)} /></div>
         <div className='pools-list-item-second-column-buttons-wrapper'>
-          <Button theme={ETheme.LIGHT} variant='primary' label='stake' onClick={makeStake} disabled={appStore.requestsAreNotAllowed}/>
+          <Button theme={ETheme.LIGHT} variant='secondary' label='stake' onClick={makeStake} disabled={appStore.requestsAreNotAllowed}/>
           <Button theme={ETheme.LIGHT} variant='secondary' label='unstake' onClick={makeUnstake} disabled={appStore.requestsAreNotAllowed}/>
         </div>
       </div>
       <div className='staking-mining-item-button-wrapper'>
-        <Button variant='secondary' theme={ETheme.LIGHT} label='claim' onClick={claim}/>
-        <Button variant='secondary' theme={ETheme.LIGHT} label='exit' onClick={exit}/>
+        <Button variant='secondary' theme={ETheme.LIGHT} label='claim' onClick={claim} disabled={appStore.requestsAreNotAllowed || !info.claimable}/>
+        <Button variant='secondary' theme={ETheme.LIGHT} label='exit' onClick={exit} disabled={appStore.requestsAreNotAllowed || info.userStake === 0}/>
       </div>
     </div>
   )

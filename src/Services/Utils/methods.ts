@@ -138,6 +138,7 @@ export const getStakingMiningInfo = async (
   const contract = createStakingClaimableContractInstance(address, type)
   const userStake = await contract?.methods.balanceOf(userAddress).call()
   let userRewards = '0'
+  let claimable = false
   if ( type === EMiningType.STAKING_CLAIMABLE) {
     const rewardsBN = await contract?.methods.earned(userAddress).call()
     const tokenAddress = await contract?.methods.gift().call()
@@ -146,6 +147,7 @@ export const getStakingMiningInfo = async (
     const tokenDecimals =  await tokenContract?.methods.decimals().call()
     const rewards = (+convertFromBN(rewardsBN, tokenDecimals)).toFixed(2)
     userRewards = `${rewards} ${tokenSymbol}`
+    claimable = +rewards !== 0
   } else {
     const token0RewardsBN = await contract?.methods.earned(0, userAddress).call()
     const token1RewardsBN = await contract?.methods.earned(1, userAddress).call()
@@ -159,13 +161,14 @@ export const getStakingMiningInfo = async (
     const token1Decimals =  await token1Contract?.methods.decimals().call()
     const rewards0 = (+convertFromBN(token0RewardsBN, token0Decimals)).toFixed(2)
     const rewards1 = (+convertFromBN(token1RewardsBN, token1Decimals)).toFixed(2)
-
     userRewards = `${rewards0} ${token0Symbol} + ${rewards1} ${token1Symbol}`
+    claimable = +rewards0 !== 0 || +rewards1 !== 0
   }
 
   return {
     userStake: +convertFromBN(userStake, decimals),
     userRewards,
+    claimable
   }
 }
 
